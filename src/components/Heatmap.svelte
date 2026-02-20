@@ -1,14 +1,15 @@
 <script lang="ts">
     import type YeartracePlugin from "../main";
-    import { recordsStore } from "../store";
+    import { recordsStore, settingsStore } from "../store";
     const _keep = recordsStore; // Prevent TS from stripping the import when only used via $
+    const _keep2 = settingsStore;
     
     export let plugin: YeartracePlugin;
 
     let year = new Date().getFullYear();
     
     // For reactivity
-    $: settings = plugin.settings;
+    $: settings = $settingsStore || plugin.settings;
     $: statusTiers = settings.statusTiers;
     $: records = $recordsStore;
 

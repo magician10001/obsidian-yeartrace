@@ -56,6 +56,21 @@ export class YeartraceSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 				)
+				.addDropdown(drop => drop
+					.addOption('main', '主项 (番茄钟)')
+					.addOption('secondary', '副项 (番茄钟)')
+					.addOption('habit', '常规习惯 (+分)')
+					.setValue(behavior.type || 'habit') // Fallback for old data
+					.onChange(async (value: any) => {
+						behavior.type = value;
+						// Main and secondary should typically be repeatable for tomatoes
+						if (value === 'main' || value === 'secondary') {
+							behavior.repeatable = true;
+						}
+						await this.plugin.saveSettings();
+						this.display(); // Need to re-render in case repeatable toggles
+					})
+				)
 				.addButton(btn => btn
 					.setButtonText('删除')
 					.setWarning()
@@ -78,7 +93,8 @@ export class YeartraceSettingTab extends PluginSettingTab {
 						id: generateId(),
 						name: '',
 						score: 1,
-						repeatable: false
+						repeatable: false,
+						type: 'habit'
 					});
 					await this.plugin.saveSettings();
 					this.display();

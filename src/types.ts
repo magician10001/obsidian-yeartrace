@@ -6,11 +6,14 @@ export interface DayRecord {
     note?: string;
 }
 
+export type BehaviorType = 'main' | 'secondary' | 'habit';
+
 export interface Behavior {
     id: string; // uuid
     name: string;
-    score: number; // e.g. +1, +2
+    score: number; // For main/secondary, this might be unused or overridden, but kept for habits
     repeatable: boolean;
+    type: BehaviorType;
     maxCount?: number;
     category?: string;
 }
@@ -43,9 +46,9 @@ export interface YeartraceSettings {
 
 export const DEFAULT_SETTINGS: YeartraceSettings = {
     behaviors: [
-        { id: 'b1', name: '运动', score: 3, repeatable: false },
-        { id: 'b2', name: '番茄钟', score: 1, repeatable: true, maxCount: 10 },
-        { id: 'b3', name: '早睡', score: 2, repeatable: false }
+        { id: 'b1', name: '文献阅读', score: 1, repeatable: true, type: 'main' },
+        { id: 'b2', name: '项目编码', score: 1, repeatable: true, maxCount: 10, type: 'secondary' },
+        { id: 'b3', name: '早睡', score: 2, repeatable: false, type: 'habit' }
     ],
     statusTiers: [
         { id: 't1', name: '低能量', minScore: 0, color: 'var(--color-base-40)' },

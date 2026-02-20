@@ -1,6 +1,6 @@
 <script lang="ts">
     import type YeartracePlugin from "../main";
-    import { recordsStore } from "../store";
+    import { recordsStore, settingsStore } from "../store";
     
     export let plugin: YeartracePlugin;
 
@@ -27,8 +27,8 @@
         };
     });
 
-    // The plugin.settings could be empty initially, reactivity trick
-    $: settings = plugin.settings;
+    // Create reactive dependency on the store, falling back to plugin.settings if undefined momentarily
+    $: settings = $settingsStore || plugin.settings;
     $: records = $recordsStore;
     
     $: currentRecord = records[currentDate] || {
@@ -39,6 +39,9 @@
     };
 
     $: behaviors = settings.behaviors;
+    $: mainBehaviors = behaviors.filter(b => b.type === 'main');
+    $: secondaryBehaviors = behaviors.filter(b => b.type === 'secondary');
+    $: habitBehaviors = behaviors.filter(b => !b.type || b.type === 'habit');
     $: statusTiers = settings.statusTiers;
 
     // Computed properties
@@ -86,15 +89,42 @@
     }
 
     function recalculateScore(record: any) {
-        let total = 0;
-        for (const b of behaviors) {
-            const val = record.behaviors[b.id];
-            if (val === true) {
-                total += b.score;
-            } else if (typeof val === 'number') {
-                total += val * b.score;
+        let a = 0; // main count
+        let b = 0; // secondary count
+        let habitsScore = 0;
+
+        for (const behavior of behaviors) {
+            const val = record.behaviors[behavior.id];
+            
+            if (behavior.type === 'main') {
+                if (typeof val === 'number') a += val;
+            } else if (behavior.type === 'secondary') {
+                if (typeof val === 'number') b += val;
+            } else {
+                // habits or undefined default
+                if (val === true) habitsScore += behavior.score;
+                else if (typeof val === 'number') habitsScore += val * behavior.score;
             }
         }
+
+        let mainSecScore = 0;
+        if (a < 6) {
+            mainSecScore = a * 8 + b * 1;
+        } else if (a >= 6 && a <= 8) {
+            if (b <= 3) {
+                mainSecScore = a * 8 + b * 8;
+            } else {
+                mainSecScore = a * 8 + 3 * 8 + (b - 3) * 5;
+            }
+        } else if (a > 8) {
+            if (b <= 3) {
+                mainSecScore = 8 * 8 + (a - 8) * 5 + b * 8;
+            } else {
+                mainSecScore = 8 * 8 + (a - 8) * 5 + 3 * 8 + (b - 3) * 5;
+            }
+        }
+
+        const total = mainSecScore + habitsScore;
         record.score = total;
         record.statusTierId = getStatusTier(total)?.id || '';
     }
@@ -110,27 +140,63 @@
     </div>
 
     <div class="behaviors-list">
-        {#each behaviors as b}
-            <div class="behavior-item">
-                <div class="behavior-info">
-                    <span class="behavior-name">{b.name}</span>
-                    <span class="behavior-score">(+{b.score})</span>
-                </div>
-                
-                <div class="behavior-actions">
-                    {#if b.repeatable}
+        {#if mainBehaviors.length > 0}
+            <div class="section-title">👑 主项 (科研/工作)</div>
+            {#each mainBehaviors as b}
+                <div class="behavior-item">
+                    <div class="behavior-info">
+                        <span class="behavior-name">{b.name}</span>
+                        <span class="behavior-score">番茄钟</span>
+                    </div>
+                    <div class="behavior-actions">
                         <button class="btn decreament" on:click={() => toggleBehavior(b.id, -1, true)}>-</button>
                         <span class="count">{currentRecord.behaviors[b.id] || 0}</span>
                         <button class="btn increment" on:click={() => toggleBehavior(b.id, 1, true)}>+</button>
-                    {:else}
-                        <input type="checkbox" 
-                               class="behavior-checkbox"
-                               checked={!!currentRecord.behaviors[b.id]}
-                               on:change={(e) => toggleBehavior(b.id, 0, false, e.currentTarget.checked)} />
-                    {/if}
+                    </div>
                 </div>
-            </div>
-        {/each}
+            {/each}
+        {/if}
+
+        {#if secondaryBehaviors.length > 0}
+            <div class="section-title">🎯 副项 (个人提升)</div>
+            {#each secondaryBehaviors as b}
+                <div class="behavior-item">
+                    <div class="behavior-info">
+                        <span class="behavior-name">{b.name}</span>
+                        <span class="behavior-score">番茄钟</span>
+                    </div>
+                    <div class="behavior-actions">
+                        <button class="btn decreament" on:click={() => toggleBehavior(b.id, -1, true)}>-</button>
+                        <span class="count">{currentRecord.behaviors[b.id] || 0}</span>
+                        <button class="btn increment" on:click={() => toggleBehavior(b.id, 1, true)}>+</button>
+                    </div>
+                </div>
+            {/each}
+        {/if}
+
+        {#if habitBehaviors.length > 0}
+            <div class="section-title">💡 其他习惯</div>
+            {#each habitBehaviors as b}
+                <div class="behavior-item">
+                    <div class="behavior-info">
+                        <span class="behavior-name">{b.name}</span>
+                        <span class="behavior-score">(+{b.score})</span>
+                    </div>
+                    <div class="behavior-actions">
+                        {#if b.repeatable}
+                            <button class="btn decreament" on:click={() => toggleBehavior(b.id, -1, true)}>-</button>
+                            <span class="count">{currentRecord.behaviors[b.id] || 0}</span>
+                            <button class="btn increment" on:click={() => toggleBehavior(b.id, 1, true)}>+</button>
+                        {:else}
+                            <input type="checkbox" 
+                                   class="behavior-checkbox"
+                                   checked={!!currentRecord.behaviors[b.id]}
+                                   on:change={(e) => toggleBehavior(b.id, 0, false, e.currentTarget.checked)} />
+                        {/if}
+                    </div>
+                </div>
+            {/each}
+        {/if}
         {#if behaviors.length === 0}
             <p class="empty-msg">请先在设置中配置你的日常行为。</p>
         {/if}
@@ -179,6 +245,16 @@
     }
     .tier-name {
         font-size: 0.9em;
+    }
+    .section-title {
+        font-size: 0.85em;
+        font-weight: bold;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        margin-top: 10px;
+        margin-bottom: -4px;
+        padding-bottom: 4px;
+        border-bottom: 1px dashed var(--background-modifier-border);
     }
     .behaviors-list {
         display: flex;

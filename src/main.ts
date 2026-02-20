@@ -4,7 +4,7 @@ import type { YeartraceSettings } from "./types";
 import { DEFAULT_SETTINGS } from "./types";
 import { VIEW_TYPE_HEATMAP, HeatmapView } from './views/HeatmapView';
 import { VIEW_TYPE_DAILY_PANEL, DailyPanelView } from './views/DailyPanelView';
-import { recordsStore } from './store';
+import { recordsStore, settingsStore } from './store';
 
 export default class YeartracePlugin extends Plugin {
 	settings: YeartraceSettings;
@@ -80,10 +80,12 @@ export default class YeartracePlugin extends Plugin {
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<YeartraceSettings>);
 		recordsStore.set(this.settings.records);
+		settingsStore.set(this.settings);
 	}
 
 	async saveSettings() {
 		this.settings.records = require('svelte/store').get(recordsStore);
 		await this.saveData(this.settings);
+		settingsStore.set({ ...this.settings });
 	}
 }
