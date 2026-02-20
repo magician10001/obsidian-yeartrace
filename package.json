@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
-	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"name": "obsidian-yeartrace",
+	"version": "0.0.1",
+	"description": "YearTrace is a plugin that helps you track your year.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
