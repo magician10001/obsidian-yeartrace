@@ -4,6 +4,14 @@ export interface DayRecord {
     score: number;
     statusTierId: string;
     note?: string;
+    summary?: string;
+    inspirations?: string[];
+    mood?: string[];
+    harvests?: string[];
+    reflections?: {
+        stuck: string;
+        improvement: string;
+    };
 }
 
 export type BehaviorType = 'main' | 'secondary' | 'habit';
